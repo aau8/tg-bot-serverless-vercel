@@ -1,67 +1,70 @@
-import { NowRequest, NowResponse } from "@vercel/node";
-import { Telegraf, Context as TelegrafContext, Scenes, session } from "telegraf";
-// import { ExtraReplyMessage } from "telegraf/typings/telegram-types";
+import { VercelRequest, VercelResponse } from "@vercel/node";
+import { Telegraf, Context as _, Scenes, session } from "telegraf";
 import { about, greeting } from "..";
 import { ok } from "./responses";
+import { Mongo } from "@telegraf/session/mongodb";
 
 const debug = require("debug")("lib:telegram");
 const isDev = process.env.DEV;
 const VERCEL_URL = process.env.VERCEL_URL;
 const BOT_TOKEN = process.env.BOT_TOKEN;
-export const bot = new Telegraf(BOT_TOKEN);
+export const bot = new Telegraf(BOT_TOKEN, { telegram: { webhookReply: false } });
 
 function botUtils() {
 	bot.use(Telegraf.log());
-	bot.use(logger);
-	console.log('botUtils')
+	// @ts-ignore
+	const store = Mongo({
+		url: 'mongodb+srv://villagio_fs82ds:81JQsclrc1rT0bvU@atlascluster.ysvbgmt.mongodb.net/?retryWrites=true&w=majority',
+		database: 'test',
+		collection: 'messages',
+	})
 
-	interface Answers {
-		name: string,
-		age: string,
-		phone: string,
-	}
+	// interface Answers {
+	// 	name: string,
+	// 	age: string,
+	// 	phone: string,
+	// }
 
-	const answers = <Answers> {}
+	// @ts-ignore
+	bot.use(session())
+	// bot.use(session({ store, defaultSession: () => ({ answers: <Answers>{} }) }))
+
+	// bot.use(logger);
+
+	// const answers = <Answers> {}
 	const testScene = new Scenes.WizardScene(
 		'wiz',
 		async ctx => {
+			// @ts-ignore
+			// console.log('ctx.session', ctx.scene.)
+			// console.log('ctx.session', ctx.session)
 			await ctx.reply('Как вас зовут?')
 			return ctx.wizard.next()
 		},
 		async ctx => {
 			// @ts-ignore
-			answers.name = ctx.message.text
+			ctx.scene.state.name = ctx.message.text
 
 			await ctx.reply('Сколько вам лет?')
 			return ctx.wizard.next()
 		},
 		async ctx => {
 			// @ts-ignore
-			answers.age = ctx.message.text
+			ctx.scene.state.age = ctx.message.text
 			await ctx.reply('Оставьте ваш номер телефона')
 			return ctx.wizard.next()
 		},
 		async ctx => {
 			// @ts-ignore
-			answers.phone = ctx.message.text
-			await ctx.reply(`Имя: ${answers.name}\nВозраст: ${answers.age}\nНомер: ${answers.phone}`)
+			ctx.scene.state.phone = ctx.message.text
+			// @ts-ignore
+			await ctx.reply(`Имя: ${ctx.scene.state.name}\nВозраст: ${ctx.scene.state.age}\nНомер: ${ctx.scene.state.phone}`)
 			return await ctx.scene.leave()
 		}
 	)
 
 	// @ts-ignore
 	const stage = new Scenes.Stage([ testScene ])
-
-	// const scene = new Scenes.BaseScene<Scenes.SceneContext>('base')
-
-	// scene.enter(ctx => {
-	// 	ctx.reply('First screen')
-	// })
-
-	// const stage = new Scenes.Stage<Scenes.SceneContext>([ scene ], {
-	// 	default: 'base'
-	// })
-	bot.use(session())
 	bot.use(stage.middleware())
 
 
@@ -81,30 +84,20 @@ function botUtils() {
 async function localBot() {
 	return new Promise(async (res) => {
 		debug("Bot is running in development mode at http://localhost:3000");
-		console.log('localBot 1')
 
 		bot.webhookReply = false;
 
 		const botInfo = await bot.telegram.getMe();
-		// bot.options.username = botInfo.username;
 
 		console.info("Server has initialized bot username: ", botInfo.username);
 
-
-		console.log('localBot 2')
-
 		debug(`deleting webhook`);
 		await bot.telegram.deleteWebhook();
-
-		console.log('localBot 3')
-		// debug(`starting polling`);
-		// await bot.launch().then(res => console.log('res', res))
-		// console.log('localBot')
 		res(true)
 	})
 }
 
-export async function useWebhook(req: NowRequest, res: NowResponse) {
+export async function useWebhook(req: VercelRequest, res: VercelResponse) {
 	try {
 		if (!isDev && !VERCEL_URL) {
 			throw new Error("VERCEL_URL is not set.");
@@ -126,10 +119,6 @@ export async function useWebhook(req: NowRequest, res: NowResponse) {
 		// call bot commands and middlware
 		botUtils();
 
-		// console.log("webhook already defined");
-		// console.log("request method: ", req.method);
-		// console.log("req.body", req.body);
-
 		if (req.method === "POST") {
 			await bot.handleUpdate(req.body, res);
 		} else {
@@ -141,29 +130,14 @@ export async function useWebhook(req: NowRequest, res: NowResponse) {
 	}
 }
 
-// export function toArgs(ctx: TelegrafContext) {
-// 	const regex = /^\/([^@\s]+)@?(?:(\S+)|)\s?([\s\S]+)?$/i;
-// 	const parts = regex.exec(ctx.message!.text!.trim());
-// 	if (!parts) {
-// 		return [];
-// 	}
-// 	return !parts[3] ? [] : parts[3].split(/\s+/).filter(arg => arg.length);
-// }
-
-// export const MARKDOWN = Extra.markdown(true) as ExtraReplyMessage;
-
-// export const NO_PREVIEW = Extra.markdown(true).webPreview(false) as ExtraReplyMessage;
-
-export const hiddenCharacter = "\u200b";
-
-export const logger = async (_: TelegrafContext, next): Promise<void> => {
-	const start = new Date();
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-	// @ts-ignore
-	await next();
-	const ms = new Date().getTime() - start.getTime();
-	console.log("Response time: %sms", ms);
-};
+// export const logger = async (_: TelegrafContext, next): Promise<void> => {
+// 	const start = new Date();
+// 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// 	// @ts-ignore
+// 	await next();
+// 	const ms = new Date().getTime() - start.getTime();
+// 	console.log("Response time: %sms", ms);
+// };
 
 if (isDev) {
 	console.log("isDev", isDev);
