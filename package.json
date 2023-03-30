@@ -2,7 +2,7 @@
 	"name": "telegram-bot-boilerplate-now-serverless-api",
 	"version": "2.0.0",
 	"description": "A template for building Telegram bots with Telegraf.js Vercel's Serverless Functions",
-	"main": "api/index.ts",
+	"main": "src/lib/telegram.ts",
 	"author": "Stephane Mensah",
 	"homepage": "https://github.com/waptik/telegram-bot-boilerplate-now-serverless-api.git",
 	"scripts": {

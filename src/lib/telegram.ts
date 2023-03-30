@@ -2,7 +2,6 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { Telegraf, Context as _, Scenes, session } from "telegraf";
 import { about, greeting } from "..";
 import { ok } from "./responses";
-import { Mongo } from "@telegraf/session/mongodb";
 
 const debug = require("debug")("lib:telegram");
 const isDev = process.env.DEV;
@@ -12,12 +11,6 @@ export const bot = new Telegraf(BOT_TOKEN, { telegram: { webhookReply: false } }
 
 function botUtils() {
 	bot.use(Telegraf.log());
-	// @ts-ignore
-	const store = Mongo({
-		url: 'mongodb+srv://villagio_fs82ds:81JQsclrc1rT0bvU@atlascluster.ysvbgmt.mongodb.net/?retryWrites=true&w=majority',
-		database: 'test',
-		collection: 'messages',
-	})
 
 	// interface Answers {
 	// 	name: string,
