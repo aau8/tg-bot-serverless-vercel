@@ -1,0 +1,59 @@
+"telegraf": "^3.38.0"
+
+
+
+
+
+
+
+
+
+
+
+	console.log('botUtils')
+
+	// const answers = {
+	// 	name: null,
+	// }
+	const testScene = new Scenes.WizardScene(
+		'wiz',
+		async ctx => {
+			await ctx.reply('Как вас зовут?')
+			return ctx.wizard.next()
+		},
+		async ctx => {
+			console.log(ctx.message)
+			// answers.name = ctx.message
+
+			await ctx.reply('Сколько вам лет?')
+			return ctx.wizard.next()
+		},
+		async ctx => {
+			await ctx.reply('Оставьте ваш номер телефона')
+			return ctx.wizard.next()
+		},
+		async ctx => {
+			await ctx.reply('Оставьте ваш номер телефона')
+			return await ctx.scene.leave()
+		}
+	)
+
+	const stage = new Scenes.Stage<MyContext>([ testScene ], {
+		default: 'wiz'
+	})
+
+	// const scene = new Scenes.BaseScene<Scenes.SceneContext>('base')
+
+	// scene.enter(ctx => {
+	// 	ctx.reply('First screen')
+	// })
+
+	// const stage = new Scenes.Stage<Scenes.SceneContext>([ scene ], {
+	// 	default: 'base'
+	// })
+	bot.use(session())
+	bot.use(stage.middleware())
+
+	bot.command('scene', ctx => {
+		ctx.scene.enter('consult')
+	})
